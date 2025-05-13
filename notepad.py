@@ -136,21 +136,28 @@ class SimpleTextEditor:
 
     def open_file(self):
         file_path = filedialog.askopenfilename(
-            filetypes=[("MonTexteEditor", "*.mte"), ("Tous les fichiers", "*.*")]
+            filetypes=[("MonTexteEditor", "*.mte"), ("Markdown", "*.md"), ("Tous les fichiers", "*.*")]
         )
         if file_path:
             with open(file_path, "r", encoding="utf-8") as f:
                 try:
-                    data = json.load(f)
-                    self.text.delete(1.0, tk.END)
-                    self.text.insert(1.0, data.get("text", ""))
-                    for tag in ["title", "subtitle", "bold", "italic", "underline"]:
-                        self.text.tag_remove(tag, "1.0", tk.END)
-                    for tagdata in data.get("tags", []):
-                        tag = tagdata["tag"]
-                        start = tagdata["start"]
-                        end = tagdata["end"]
-                        self.text.tag_add(tag, start, end)
+                    if file_path.endswith(".mte"):
+                        # Lecture du fichier MTE
+                        data = json.load(f)
+                        self.text.delete(1.0, tk.END)
+                        self.text.insert(1.0, data.get("text", ""))
+                        for tag in ["title", "subtitle", "bold", "italic", "underline"]:
+                            self.text.tag_remove(tag, "1.0", tk.END)
+                        for tagdata in data.get("tags", []):
+                            tag = tagdata["tag"]
+                            start = tagdata["start"]
+                            end = tagdata["end"]
+                            self.text.tag_add(tag, start, end)
+                    elif file_path.endswith(".md"):
+                        # Lecture du fichier Markdown
+                        content = f.read()
+                        self.text.delete(1.0, tk.END)
+                        self.text.insert(1.0, content)
                     self.current_file = file_path
                     self.update_section_list()
                 except Exception as e:
@@ -161,23 +168,30 @@ class SimpleTextEditor:
         if not file_path:
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".mte",
-                filetypes=[("MonTexteEditor", "*.mte"), ("Tous les fichiers", "*.*")]
+                filetypes=[("MonTexteEditor", "*.mte"), ("Markdown", "*.md"), ("Tous les fichiers", "*.*")]
             )
         if file_path:
-            text_content = self.text.get("1.0", tk.END)
-            tags_data = []
-            for tag in ["title", "subtitle", "bold", "italic", "underline"]:
-                ranges = self.text.tag_ranges(tag)
-                for i in range(0, len(ranges), 2):
-                    start = str(ranges[i])
-                    end = str(ranges[i+1])
-                    tags_data.append({"tag": tag, "start": start, "end": end})
-            data = {
-                "text": text_content,
-                "tags": tags_data
-            }
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            if file_path.endswith(".mte"):
+                # Sauvegarde au format MTE
+                text_content = self.text.get("1.0", tk.END)
+                tags_data = []
+                for tag in ["title", "subtitle", "bold", "italic", "underline"]:
+                    ranges = self.text.tag_ranges(tag)
+                    for i in range(0, len(ranges), 2):
+                        start = str(ranges[i])
+                        end = str(ranges[i+1])
+                        tags_data.append({"tag": tag, "start": start, "end": end})
+                data = {
+                    "text": text_content,
+                    "tags": tags_data
+                }
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+            elif file_path.endswith(".md"):
+                # Sauvegarde au format Markdown
+                content = self.text.get("1.0", tk.END)
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(content)
             self.current_file = file_path
             messagebox.showinfo("Enregistrement", "Fichier enregistré avec succès.")
 
